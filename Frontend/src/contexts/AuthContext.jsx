@@ -1,87 +1,64 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { authAPI } from '../services/api';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useToast } from './ToastContext';
-import { getDemoCredentials, isDemoEnabled } from '../config/demo.config';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useLocalStorage('user', null);
-  const [token, setToken] = useLocalStorage('token', null);
-  const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
-  const { showToast } = useToast();
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (!error) setProfile(data);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
 
   useEffect(() => {
-    if (token && user) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, [token, user]);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      setLoading(false);
+    });
 
-  const login = useCallback(async (email, password) => {
-    setLoading(true);
-    try {
-      if (isDemoEnabled()) {
-        const demoData = getDemoCredentials(email, password);
-        if (demoData) {
-          setToken(demoData.token);
-          setUser(demoData.user);
-          setIsAuthenticated(true);
-          showToast('success', '🎭 Demo login successful!');
-          return { success: true, user: demoData.user };
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
         }
       }
+    );
 
-      const response = await authAPI.login(email, password);
-      setToken(response.token);
-      setUser(response.user);
-      setIsAuthenticated(true);
-      showToast('success', 'Login successful!');
-      return { success: true, user: response.user };
-    } catch (error) {
-      const message = error.message || 'Login failed';
-      showToast('error', message);
-      return { success: false, error: message };
-    } finally {
-      setLoading(false);
-    }
-  }, [setToken, setUser, showToast]);
+    return () => subscription.unsubscribe();
+  }, []);
 
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-    showToast('info', 'Logged out successfully');
-  }, [setToken, setUser, showToast]);
+  const login = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    return data;
+  };
 
-  const updateUser = useCallback((userData) => {
-    setUser((prev) => ({ ...prev, ...userData }));
-  }, [setUser]);
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
 
-  const updateAuthState = useCallback((newUser, newToken) => {
-    setUser(newUser);
-    setToken(newToken);
-    setIsAuthenticated(true);
-  }, [setUser, setToken]);
-
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      isAuthenticated,
-      loading,
-      login,
-      logout,
-      updateUser,
-      updateAuthState,
-    }),
-    [user, token, isAuthenticated, loading, login, logout, updateUser, updateAuthState]
+  return (
+    <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

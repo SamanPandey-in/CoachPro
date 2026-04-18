@@ -8,23 +8,23 @@ import { useAuth } from '../contexts/AuthContext';
  * @param {Array} allowedRoles - Allowed user roles
  */
 export const withAuth = (Component, allowedRoles = []) => {
-  return function AuthenticatedComponent(props) {
-    const { isAuthenticated, user, loading } = useAuth();
+  return function ProtectedRoute(props) {
+    const { user, profile, loading } = useAuth();
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-brand dark:border-brand-light border-t-transparent rounded-full animate-spin" />
         </div>
       );
     }
 
-    if (!isAuthenticated) {
+    if (!user) {
       return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-      return <Navigate to={`/${user?.role}/dashboard`} replace />;
+    if (allowedRoles.length > 0 && !allowedRoles.includes(profile?.role)) {
+      return <Navigate to="/login" replace />;
     }
 
     return <Component {...props} />;
