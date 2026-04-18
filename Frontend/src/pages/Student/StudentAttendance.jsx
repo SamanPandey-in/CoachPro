@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, TrendingUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../../components/Layout/Layout';
 import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';

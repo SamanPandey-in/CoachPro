@@ -6,6 +6,10 @@ import StatCard from '../../components/UI/StatCard';
 import Card from '../../components/UI/Card';
 import { mockApi } from '../../api/mockData';
 
+const CHART_BRAND = 'var(--chart-brand)';
+const CHART_MUTED = 'var(--chart-muted)';
+const CHART_ABSENT = '#E2E8F0';
+
 const AdminAnalytics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,8 +33,6 @@ const AdminAnalytics = () => {
       </Layout>
     );
   }
-
-  const COLORS = ['#00A8FF', '#22c55e', '#eab308', '#ef4444'];
 
   return (
     <Layout role="admin">
@@ -86,7 +88,7 @@ const AdminAnalytics = () => {
               <XAxis dataKey="month" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Area type="monotone" dataKey="students" stroke="#00A8FF" fill="#00A8FF" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="students" stroke={CHART_BRAND} fill={CHART_BRAND} fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -104,7 +106,7 @@ const AdminAnalytics = () => {
                 <XAxis dataKey="range" stroke="#9ca3af" />
                 <YAxis stroke="#9ca3af" />
                 <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-                <Bar dataKey="count" fill="#FFD700" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="count" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -118,7 +120,7 @@ const AdminAnalytics = () => {
               <PieChart>
                 <Pie data={data.attendanceDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
                   {data.attendanceDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={index === 0 ? CHART_BRAND : CHART_ABSENT} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
@@ -140,7 +142,7 @@ const AdminAnalytics = () => {
               <XAxis type="number" stroke="#9ca3af" />
               <YAxis type="category" dataKey="subject" stroke="#9ca3af" width={100} />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Bar dataKey="avgScore" fill="#00A8FF" radius={[0, 8, 8, 0]} />
+              <Bar dataKey="avgScore" fill={CHART_MUTED} radius={[0, 8, 8, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

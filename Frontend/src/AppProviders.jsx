@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { DataProvider } from './contexts/DataContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import ErrorBoundary from './components/UI/ErrorBoundary';
 
 /**
@@ -11,17 +12,19 @@ import ErrorBoundary from './components/UI/ErrorBoundary';
  */
 const AppProviders = ({ children }) => {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <DataProvider>
-          <ToastProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </ToastProvider>
-        </DataProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <DataProvider>
+            <ToastProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </ToastProvider>
+          </DataProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 };
 

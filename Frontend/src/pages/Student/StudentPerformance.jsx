@@ -6,6 +6,9 @@ import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';
 import { mockApi } from '../../api/mockData';
 
+const CHART_BRAND = 'var(--chart-brand)';
+const CHART_MUTED = 'var(--chart-muted)';
+
 const StudentPerformance = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,7 +75,7 @@ const StudentPerformance = () => {
               <XAxis dataKey="month" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Line type="monotone" dataKey="percentage" stroke="#00A8FF" strokeWidth={3} dot={{ r: 5, fill: '#FFD700' }} />
+              <Line type="monotone" dataKey="percentage" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 5, fill: CHART_MUTED }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -86,7 +89,7 @@ const StudentPerformance = () => {
               <XAxis dataKey="subject" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Bar dataKey="percentage" fill="#FFD700" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="percentage" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

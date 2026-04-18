@@ -5,6 +5,9 @@ import Layout from '../../components/Layout/Layout';
 import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';
 
+const CHART_BRAND = 'var(--chart-brand)';
+const CHART_MUTED = 'var(--chart-muted)';
+
 const StudentProgress = () => {
   const progressData = [
     { month: 'Aug', score: 78 },
@@ -59,7 +62,7 @@ const StudentProgress = () => {
               <XAxis dataKey="month" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Line type="monotone" dataKey="score" stroke="#22c55e" strokeWidth={3} dot={{ r: 5, fill: '#FFD700' }} />
+              <Line type="monotone" dataKey="score" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 5, fill: CHART_MUTED }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

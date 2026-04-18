@@ -1,24 +1,33 @@
 import React from 'react';
 import Card from './Card';
 
-const StatCard = ({ icon: Icon, label, value, change, iconColor = 'bg-primary' }) => {
-  const isPositive = change?.startsWith('+');
-  
+const StatCard = ({ icon: Icon, label, value, change, trend = 'up' }) => {
+  const isPositive = trend === 'up';
+
   return (
-    <Card hover>
+    <Card>
       <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-gray-400 text-sm mb-2">{label}</p>
-          <p className="text-3xl font-bold text-white mb-2">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-text-muted dark:text-text-muted-dark mb-1 truncate">
+            {label}
+          </p>
+          <p className="text-2xl font-bold text-text-primary dark:text-text-primary-dark mb-2">
+            {value}
+          </p>
           {change && (
-            <p className={`text-sm flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-              <span>{change}</span>
-              <span className="text-gray-500">this month</span>
+            <p
+              className={`text-xs font-medium ${
+                isPositive
+                  ? 'text-success dark:text-success-dark'
+                  : 'text-danger dark:text-danger-dark'
+              }`}
+            >
+              {change}
             </p>
           )}
         </div>
-        <div className={`${iconColor} p-3 rounded-xl`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className="bg-brand-muted dark:bg-brand-muted-dark p-2.5 rounded-xl flex-shrink-0 ml-4">
+          <Icon className="w-5 h-5 text-brand dark:text-brand-light" />
         </div>
       </div>
     </Card>

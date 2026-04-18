@@ -7,6 +7,9 @@ import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';
 import { mockApi } from '../../api/mockData';
 
+const CHART_BRAND = 'var(--chart-brand)';
+const CHART_MUTED = 'var(--chart-muted)';
+
 const StudentDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,28 +58,24 @@ const StudentDashboard = () => {
             label="Current Rank"
             value={`#${data.stats.currentRank}`}
             change="+2 from last month"
-            iconColor={data.stats.currentRank <= 10 ? 'bg-gold' : 'bg-primary'}
           />
           <StatCard
             icon={TrendingUp}
             label="Overall Percentage"
             value={`${data.stats.overallPercentage}%`}
             change="+5.2% from last month"
-            iconColor="bg-green-500"
           />
           <StatCard
             icon={Calendar}
             label="Attendance"
             value={`${data.stats.attendance}%`}
             change="+3.1% from last month"
-            iconColor="bg-purple-500"
           />
           <StatCard
             icon={ClipboardList}
             label="Pending Assignments"
             value={data.stats.pendingAssignments}
             change="2 due this week"
-            iconColor="bg-yellow-500"
           />
         </div>
 
@@ -97,7 +96,7 @@ const StudentDashboard = () => {
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
                   labelStyle={{ color: '#ffffff' }}
                 />
-                <Line type="monotone" dataKey="percentage" stroke="#00A8FF" strokeWidth={3} dot={{ r: 5, fill: '#FFD700' }} />
+                <Line type="monotone" dataKey="percentage" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 5, fill: CHART_MUTED }} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -116,7 +115,7 @@ const StudentDashboard = () => {
                 <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
                 />
-                <Bar dataKey="percentage" fill="#FFD700" radius={[0, 8, 8, 0]} />
+                <Bar dataKey="percentage" fill={CHART_BRAND} radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>

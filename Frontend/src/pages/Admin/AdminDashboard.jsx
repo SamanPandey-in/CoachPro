@@ -7,6 +7,10 @@ import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';
 import { mockApi } from '../../api/mockData';
 
+const CHART_BRAND = 'var(--chart-brand)';
+const CHART_MUTED = 'var(--chart-muted)';
+const CHART_ABSENT = '#E2E8F0';
+
 const AdminDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,8 +35,6 @@ const AdminDashboard = () => {
     );
   }
 
-  const COLORS = ['#22c55e', '#ef4444'];
-
   return (
     <Layout role="admin">
       <div className="space-y-6">
@@ -49,28 +51,24 @@ const AdminDashboard = () => {
             label="Total Students"
             value={data.stats.totalStudents}
             change={data.stats.trends.students}
-            iconColor="bg-primary"
           />
           <StatCard
             icon={UserCheck}
             label="Total Teachers"
             value={data.stats.totalTeachers}
             change={data.stats.trends.teachers}
-            iconColor="bg-green-500"
           />
           <StatCard
             icon={Award}
             label="Average Performance"
             value={`${data.stats.avgPerformance}%`}
             change={data.stats.trends.performance}
-            iconColor="bg-gold"
           />
           <StatCard
             icon={TrendingUp}
             label="Attendance Rate"
             value={`${data.stats.attendanceRate}%`}
             change={data.stats.trends.attendance}
-            iconColor="bg-purple-500"
           />
         </div>
 
@@ -91,7 +89,7 @@ const AdminDashboard = () => {
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
                   labelStyle={{ color: '#ffffff' }}
                 />
-                <Bar dataKey="performance" fill="#FFD700" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="performance" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -116,9 +114,8 @@ const AdminDashboard = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {COLORS.map((color, index) => (
-                    <Cell key={`cell-${index}`} fill={color} />
-                  ))}
+                  <Cell fill={CHART_BRAND} />
+                  <Cell fill={CHART_ABSENT} />
                 </Pie>
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
@@ -145,8 +142,8 @@ const AdminDashboard = () => {
                 labelStyle={{ color: '#ffffff' }}
               />
               <Legend />
-              <Line type="monotone" dataKey="students" stroke="#00A8FF" strokeWidth={2} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="teachers" stroke="#FFD700" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="students" stroke={CHART_BRAND} strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="teachers" stroke={CHART_MUTED} strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

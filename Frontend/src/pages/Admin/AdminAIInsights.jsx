@@ -6,6 +6,8 @@ import Card from '../../components/UI/Card';
 import Badge from '../../components/UI/Badge';
 import { mockApi } from '../../api/mockData';
 
+const CHART_BRAND = 'var(--chart-brand)';
+
 const AdminAIInsights = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -144,7 +146,7 @@ const AdminAIInsights = () => {
               <XAxis dataKey="month" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Line type="monotone" dataKey="predicted" stroke="#a855f7" strokeWidth={3} dot={{ r: 5 }} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="predicted" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 5 }} strokeDasharray="5 5" />
             </LineChart>
           </ResponsiveContainer>
         </Card>
