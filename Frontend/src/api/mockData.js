@@ -811,48 +811,6 @@ export const analyticsData = {
   ]
 };
 
-// AI Insights data
-export const aiInsightsData = {
-  predictedToppers: [
-    { studentId: 1, name: 'Rahul Sharma', currentRank: 12, predictedRank: 5, confidence: 85, improvement: '+7' },
-    { studentId: 5, name: 'Vikram Singh', currentRank: 3, predictedRank: 1, confidence: 90, improvement: '+2' },
-    { studentId: 6, name: 'Sneha Kapoor', currentRank: 8, predictedRank: 4, confidence: 78, improvement: '+4' },
-    { studentId: 7, name: 'Aditya Malhotra', currentRank: 15, predictedRank: 8, confidence: 82, improvement: '+7' },
-    { studentId: 8, name: 'Kavya Iyer', currentRank: 6, predictedRank: 3, confidence: 88, improvement: '+3' }
-  ],
-  atRiskStudents: [
-    { studentId: 7, name: 'Aditya Malhotra', rank: 15, percentage: 82.3, attendance: 88.5, riskFactors: ['Declining attendance', 'Recent low scores'] },
-    { studentId: 6, name: 'Sneha Kapoor', rank: 8, percentage: 89.2, attendance: 91.0, riskFactors: ['Inconsistent performance'] }
-  ],
-  performanceForecast: [
-    { month: 'Jan', predicted: 83.5, actual: null },
-    { month: 'Feb', predicted: 84.8, actual: null },
-    { month: 'Mar', predicted: 86.2, actual: null },
-    { month: 'Apr', predicted: 87.5, actual: null }
-  ],
-  weakAreas: [
-    { subject: 'Mathematics', topic: 'Calculus', studentsStruggling: 45, avgScore: 65 },
-    { subject: 'Physics', topic: 'Quantum Mechanics', studentsStruggling: 38, avgScore: 62 },
-    { subject: 'Chemistry', topic: 'Organic Reactions', studentsStruggling: 32, avgScore: 68 }
-  ],
-  attendancePatterns: {
-    peakDays: ['Monday', 'Wednesday'],
-    lowDays: ['Saturday'],
-    avgByMonth: [
-      { month: 'Aug', avg: 85.5 },
-      { month: 'Sep', avg: 86.2 },
-      { month: 'Oct', avg: 87.1 },
-      { month: 'Nov', avg: 87.8 },
-      { month: 'Dec', avg: 87.3 }
-    ]
-  },
-  recommendations: [
-    { category: 'Study Tips', message: 'Focus on calculus practice problems for better understanding' },
-    { category: 'Attendance', message: 'Maintain regular attendance to improve learning outcomes' },
-    { category: 'Time Management', message: 'Allocate more time for difficult subjects like physics' }
-  ]
-};
-
 // Dashboard data (existing, keeping for compatibility)
 export const adminDashboardData = {
   stats: {
@@ -897,12 +855,7 @@ export const adminDashboardData = {
     { name: 'Ms. Lisa Chen', subject: 'Chemistry', lectures: 142, rating: 4.9 },
     { name: 'Dr. Rajesh Verma', subject: 'Biology', lectures: 138, rating: 4.6 },
     { name: 'Mr. David Lee', subject: 'English', lectures: 134, rating: 4.5 }
-  ],
-  aiInsights: {
-    predictedToppers: '5 students showing excellent improvement trajectory',
-    atRiskStudents: '8 students need immediate attention and support',
-    batchHealth: 'Overall batch performance trending upward by 5.2%'
-  }
+  ]
 };
 
 export const teacherDashboardData = {
@@ -1058,12 +1011,6 @@ export const mockApi = {
   getAnalytics: () => {
     return new Promise((resolve) => {
       setTimeout(() => resolve(analyticsData), 300);
-    });
-  },
-
-  getAIInsights: () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(aiInsightsData), 300);
     });
   },
 

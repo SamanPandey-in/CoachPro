@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserCheck, Award, TrendingUp, Brain, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Users, UserCheck, Award, TrendingUp, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Layout from '../../components/Layout/Layout';
 import StatCard from '../../components/UI/StatCard';
@@ -215,34 +215,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* AI Insights */}
-        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
-          <div className="flex items-center gap-2 mb-6">
-            <Brain className="w-6 h-6 text-primary" />
-            <h3 className="text-xl font-semibold text-white">AI-Powered Insights</h3>
-            <Badge variant="primary" size="sm">Beta</Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-primary/10 border border-primary/30 rounded-xl p-6">
-              <TrendingUp className="w-8 h-8 text-primary mb-3" />
-              <h4 className="font-semibold text-primary mb-2">Predicted Toppers</h4>
-              <p className="text-sm text-gray-300">{data.aiInsights.predictedToppers}</p>
-            </div>
-            
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
-              <AlertTriangle className="w-8 h-8 text-yellow-500 mb-3" />
-              <h4 className="font-semibold text-yellow-500 mb-2">At-Risk Students</h4>
-              <p className="text-sm text-gray-300">{data.aiInsights.atRiskStudents}</p>
-            </div>
-            
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6">
-              <CheckCircle className="w-8 h-8 text-green-500 mb-3" />
-              <h4 className="font-semibold text-green-500 mb-2">Batch Health</h4>
-              <p className="text-sm text-gray-300">{data.aiInsights.batchHealth}</p>
-            </div>
-          </div>
-        </Card>
+
       </div>
     </Layout>
   );

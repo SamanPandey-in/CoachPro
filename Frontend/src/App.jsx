@@ -15,7 +15,6 @@ const AdminTeachers = lazy(() => import('./pages/Admin/AdminTeachers'));
 const AdminAnalytics = lazy(() => import('./pages/Admin/AdminAnalytics'));
 const AdminAttendance = lazy(() => import('./pages/Admin/AdminAttendance'));
 const AdminTestsManagement = lazy(() => import('./pages/Admin/AdminTestsManagement'));
-const AdminAIInsights = lazy(() => import('./pages/Admin/AdminAIInsights'));
 const AdminNotifications = lazy(() => import('./pages/Admin/AdminNotifications'));
 
 // Teacher Pages
@@ -50,7 +49,6 @@ const ProtectedAdminTeachers = withAuth(AdminTeachers, ['admin']);
 const ProtectedAdminAnalytics = withAuth(AdminAnalytics, ['admin']);
 const ProtectedAdminAttendance = withAuth(AdminAttendance, ['admin']);
 const ProtectedAdminTests = withAuth(AdminTestsManagement, ['admin']);
-const ProtectedAdminAI = withAuth(AdminAIInsights, ['admin']);
 const ProtectedAdminNotifications = withAuth(AdminNotifications, ['admin']);
 
 const ProtectedTeacherDashboard = withAuth(TeacherDashboard, ['teacher']);
@@ -85,7 +83,6 @@ function App() {
           <Route path="/admin/analytics" element={<ProtectedAdminAnalytics />} />
           <Route path="/admin/attendance" element={<ProtectedAdminAttendance />} />
           <Route path="/admin/tests" element={<ProtectedAdminTests />} />
-          <Route path="/admin/ai-insights" element={<ProtectedAdminAI />} />
           <Route path="/admin/notifications" element={<ProtectedAdminNotifications />} />
 
           {/* Teacher Routes */}
