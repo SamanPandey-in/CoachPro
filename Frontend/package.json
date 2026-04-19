@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke:supabase": "node scripts/smoke-supabase.mjs",
+    "accounts:create": "node scripts/create-login-accounts.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",

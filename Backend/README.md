@@ -13,11 +13,13 @@ This directory is intentionally minimal. The Express + MongoDB backend has been 
 
 1. **Reference the archived code**: See `Backend_legacy/` if you need to review the old Express code
 2. **Frontend setup**: See `SUPABASE_SETUP.md` at the project root for complete Supabase setup instructions
-3. **Get API keys**: Go to your Supabase project → Settings → API → Copy URL and Anon Key
+3. **Get API keys**: Go to your Supabase project → Settings → API → Copy Project URL and Publishable key
 4. **Update Frontend/.env** with:
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-key-here
+  VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
+  # Optional legacy fallback:
+  # VITE_SUPABASE_ANON_KEY=your-legacy-anon-key
    ```
 
 ## Supabase Client

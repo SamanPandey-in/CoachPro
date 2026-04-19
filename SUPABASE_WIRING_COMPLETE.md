@@ -248,7 +248,8 @@ When ready for production:
 3. **Email Verification:** Optional — Supabase can enforce email verification
 4. **Environment Variables:**
    - `.env` stays local (never commit)
-   - Vercel/hosting: Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in deployment settings
+  - Vercel/hosting: Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in deployment settings
+  - Legacy fallback: `VITE_SUPABASE_ANON_KEY` is still supported during migration
 5. **Monitor RLS:** Test role-based access by logging in as different users
 
 ---

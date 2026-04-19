@@ -8,8 +8,7 @@ export const testService = {
       .select(`
         *,
         subjects(name),
-        batches(name, course),
-        profiles!teachers(name)
+        batches(name, course)
       `)
       .order('test_date', { ascending: false });
 
