@@ -29,11 +29,10 @@ const NAV = {
   ],
   student: [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
-    { name: 'Performance', icon: TrendingUp, path: '/student/performance' },
+    { name: 'My Results', icon: TrendingUp, path: '/student/performance' },
     { name: 'Attendance', icon: Calendar, path: '/student/attendance' },
-    { name: 'Tests & Marks', icon: FileText, path: '/student/tests' },
     { name: 'Assignments', icon: ClipboardList, path: '/student/assignments' },
-    { name: 'Progress', icon: Award, path: '/student/progress' },
+    { name: 'Study Goals', icon: Award, path: '/student/progress' },
     { name: 'Notifications', icon: Bell, path: '/student/notifications' },
   ],
 };

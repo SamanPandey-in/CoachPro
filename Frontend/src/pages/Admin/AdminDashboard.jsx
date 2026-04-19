@@ -1,221 +1,163 @@
-import React, { useEffect, useState } from 'react';
-import { Users, UserCheck, Award, TrendingUp, CheckCircle } from 'lucide-react';
-import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Users, UserCheck, CalendarCheck, FileText, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../../components/Layout/Layout';
 import StatCard from '../../components/UI/StatCard';
 import Card from '../../components/UI/Card';
-import Badge from '../../components/UI/Badge';
-import { mockApi } from '../../api/mockData';
+import PageHeader from '../../components/UI/PageHeader';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import DataTable from '../../components/UI/DataTable';
+import { dashboardService } from '../../services/dashboard';
+import { studentService } from '../../services/students';
+import { testService } from '../../services/tests';
 
 const CHART_BRAND = 'var(--chart-brand)';
-const CHART_MUTED = 'var(--chart-muted)';
 const CHART_ABSENT = '#E2E8F0';
 
+const monthLabel = (dateStr) => new Date(dateStr).toLocaleString('en-US', { month: 'short' });
+
 const AdminDashboard = () => {
-  const [data, setData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    mockApi.getAdminDashboard().then(result => {
-      setData(result);
-      setLoading(false);
-    });
+    const load = async () => {
+      try {
+        const [statsRes, studentsRes, testsRes] = await Promise.all([
+          dashboardService.getAdminStats(),
+          studentService.getAll(),
+          testService.getAll(),
+        ]);
+        setStats(statsRes);
+        setStudents(studentsRes || []);
+        setTests(testsRes || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  if (loading) {
-    return (
-      <Layout role="admin">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading dashboard...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const enrollmentTrend = useMemo(() => {
+    const buckets = {};
+    (students || []).forEach((s) => {
+      if (!s.admission_date) return;
+      const d = new Date(s.admission_date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!buckets[key]) {
+        buckets[key] = { month: monthLabel(s.admission_date), enrolled: 0 };
+      }
+      buckets[key].enrolled += 1;
+    });
+    return Object.entries(buckets)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([, value]) => value);
+  }, [students]);
+
+  const testsThisMonth = useMemo(() => {
+    const now = new Date();
+    return (tests || []).filter((t) => {
+      const d = new Date(t.test_date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+  }, [tests]);
+
+  const lowAttendanceStudents = useMemo(() => {
+    return (students || [])
+      .filter((s) => (s.attendance_pct ?? 0) < 75)
+      .sort((a, b) => (a.attendance_pct ?? 0) - (b.attendance_pct ?? 0));
+  }, [students]);
+
+  if (loading) return <LoadingState role="admin" />;
+  if (error) return <ErrorState role="admin" message={error} />;
+
+  const presentCount = (stats?.attendanceSummary || []).reduce((sum, item) => sum + (item.present || 0), 0);
+  const totalCount = (stats?.attendanceSummary || []).reduce((sum, item) => sum + (item.total || 0), 0);
+  const absentCount = Math.max(totalCount - presentCount, 0);
 
   return (
     <Layout role="admin">
       <div className="space-y-6">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-400">Complete overview of your coaching institute</p>
-        </div>
+        <PageHeader
+          title="Dashboard"
+          subtitle="Today's snapshot across students, teachers, attendance, and tests"
+        />
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            icon={Users}
-            label="Total Students"
-            value={data.stats.totalStudents}
-            change={data.stats.trends.students}
-          />
-          <StatCard
-            icon={UserCheck}
-            label="Total Teachers"
-            value={data.stats.totalTeachers}
-            change={data.stats.trends.teachers}
-          />
-          <StatCard
-            icon={Award}
-            label="Average Performance"
-            value={`${data.stats.avgPerformance}%`}
-            change={data.stats.trends.performance}
-          />
-          <StatCard
-            icon={TrendingUp}
-            label="Attendance Rate"
-            value={`${data.stats.attendanceRate}%`}
-            change={data.stats.trends.attendance}
-          />
+          <StatCard icon={Users} label="Total Students" value={stats?.totalStudents ?? 0} />
+          <StatCard icon={UserCheck} label="Total Teachers" value={stats?.totalTeachers ?? 0} />
+          <StatCard icon={CalendarCheck} label="Today's Attendance" value={`${stats?.todayAttendance ?? 0}%`} />
+          <StatCard icon={FileText} label="Tests This Month" value={testsThisMonth} />
         </div>
 
-        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Batch Performance */}
           <Card className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-white">Batch-wise Performance</h3>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.batchPerformance}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                <XAxis dataKey="batch" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
-                  labelStyle={{ color: '#ffffff' }}
-                />
-                <Bar dataKey="performance" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
+            <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark mb-4">
+              Enrollment Trend (Last 6 Months)
+            </h3>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={enrollmentTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                <XAxis dataKey="month" stroke="#64748B" />
+                <YAxis stroke="#64748B" />
+                <Tooltip />
+                <Bar dataKey="enrolled" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          {/* Attendance Distribution */}
           <Card>
-            <div className="flex items-center gap-2 mb-6">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <h3 className="text-lg font-semibold text-white">Attendance Today</h3>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark mb-4">
+              Today's Attendance
+            </h3>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={[
-                    { name: 'Present', value: data.attendanceToday.present },
-                    { name: 'Absent', value: data.attendanceToday.absent }
+                    { name: 'Present', value: presentCount },
+                    { name: 'Absent', value: absentCount },
                   ]}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
+                  innerRadius={50}
+                  outerRadius={90}
                   dataKey="value"
                 >
                   <Cell fill={CHART_BRAND} />
                   <Cell fill={CHART_ABSENT} />
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
-                />
-                <Legend />
+                <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </Card>
         </div>
 
-        {/* Growth Trend */}
         <Card>
-          <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold text-white">Growth Trend</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-5 h-5 text-warning dark:text-warning-dark" />
+            <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark">
+              Students Needing Attention (Attendance under 75%)
+            </h3>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.growthTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="month" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }}
-                labelStyle={{ color: '#ffffff' }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="students" stroke={CHART_BRAND} strokeWidth={2} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="teachers" stroke={CHART_MUTED} strokeWidth={2} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <DataTable
+            columns={[
+              { key: 'name', label: 'Name' },
+              { key: 'roll_number', label: 'Roll No.' },
+              { key: 'batch', label: 'Batch' },
+              { key: 'attendance_pct', label: 'Attendance', render: (r) => `${r.attendance_pct ?? 0}%` },
+              { key: 'avg_score', label: 'Avg Score', render: (r) => `${r.avg_score ?? 0}%` },
+            ]}
+            rows={lowAttendanceStudents}
+            emptyMessage="No students are below 75% attendance."
+          />
         </Card>
-
-        {/* Tables Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Students */}
-          <Card>
-            <div className="flex items-center gap-2 mb-6">
-              <Award className="w-5 h-5 text-gold" />
-              <h3 className="text-lg font-semibold text-white">Top Performing Students</h3>
-            </div>
-            <div className="space-y-3">
-              {data.topStudents.map((student) => (
-                <div
-                  key={student.rank}
-                  className="flex items-center gap-4 p-4 bg-dark-200 rounded-xl hover:bg-dark-300 transition-colors"
-                >
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
-                    ${student.rank === 1 ? 'bg-yellow-500 text-dark' : 
-                      student.rank === 2 ? 'bg-gray-400 text-dark' : 
-                      student.rank === 3 ? 'bg-orange-600 text-white' : 
-                      'bg-dark-300 text-gray-400'}
-                  `}>
-                    #{student.rank}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-white">{student.name}</p>
-                    <p className="text-sm text-gray-400">{student.batch}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gold">{student.percentage}%</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Teacher Performance */}
-          <Card>
-            <div className="flex items-center gap-2 mb-6">
-              <UserCheck className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-white">Teacher Performance</h3>
-            </div>
-            <div className="space-y-3">
-              {data.teacherPerformance.map((teacher, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-4 p-4 bg-dark-200 rounded-xl hover:bg-dark-300 transition-colors"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-gold to-primary rounded-full flex items-center justify-center">
-                    <UserCheck className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-white">{teacher.name}</p>
-                    <p className="text-sm text-gray-400">{teacher.subject}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-300">{teacher.lectures}</p>
-                    <p className="text-xs text-gray-500">Lectures</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gold">★ {teacher.rating}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-
       </div>
     </Layout>
   );

@@ -30,14 +30,13 @@ const TeacherNotifications = lazy(() => import('./pages/Teacher/TeacherNotificat
 const StudentDashboard = lazy(() => import('./pages/Student/StudentDashboard'));
 const StudentPerformance = lazy(() => import('./pages/Student/StudentPerformance'));
 const StudentAttendance = lazy(() => import('./pages/Student/StudentAttendance'));
-const StudentTests = lazy(() => import('./pages/Student/StudentTests'));
 const StudentAssignments = lazy(() => import('./pages/Student/StudentAssignments'));
 const StudentProgress = lazy(() => import('./pages/Student/StudentProgress'));
 const StudentNotifications = lazy(() => import('./pages/Student/StudentNotifications'));
 
 // Loading fallback
 const PageLoader = () => (
-  <div className="min-h-screen bg-dark flex items-center justify-center">
+  <div className="min-h-screen bg-bg dark:bg-bg-dark flex items-center justify-center">
     <LoadingSpinner size="xl" />
   </div>
 );
@@ -62,7 +61,6 @@ const ProtectedTeacherNotifications = withAuth(TeacherNotifications, ['teacher']
 const ProtectedStudentDashboard = withAuth(StudentDashboard, ['student']);
 const ProtectedStudentPerformance = withAuth(StudentPerformance, ['student']);
 const ProtectedStudentAttendance = withAuth(StudentAttendance, ['student']);
-const ProtectedStudentTests = withAuth(StudentTests, ['student']);
 const ProtectedStudentAssignments = withAuth(StudentAssignments, ['student']);
 const ProtectedStudentProgress = withAuth(StudentProgress, ['student']);
 const ProtectedStudentNotifications = withAuth(StudentNotifications, ['student']);
@@ -98,7 +96,6 @@ function App() {
           <Route path="/student/dashboard" element={<ProtectedStudentDashboard />} />
           <Route path="/student/performance" element={<ProtectedStudentPerformance />} />
           <Route path="/student/attendance" element={<ProtectedStudentAttendance />} />
-          <Route path="/student/tests" element={<ProtectedStudentTests />} />
           <Route path="/student/assignments" element={<ProtectedStudentAssignments />} />
           <Route path="/student/progress" element={<ProtectedStudentProgress />} />
           <Route path="/student/notifications" element={<ProtectedStudentNotifications />} />

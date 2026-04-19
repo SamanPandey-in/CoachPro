@@ -1,109 +1,160 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardList, Plus } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
-import Card from '../../components/UI/Card';
+import PageHeader from '../../components/UI/PageHeader';
 import Button from '../../components/UI/Button';
-import Badge from '../../components/UI/Badge';
-import { mockApi } from '../../api/mockData';
+import Card from '../../components/UI/Card';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import Modal from '../../components/UI/Modal';
+import { useAuth } from '../../contexts/AuthContext';
+import { teacherService } from '../../services/teachers';
+import { assignmentService } from '../../services/assignments';
+import { supabase } from '../../lib/supabase';
+
+const initialForm = {
+  title: '',
+  description: '',
+  due_date: '',
+  subject_id: '',
+  batch_id: '',
+};
 
 const TeacherAssignments = () => {
+  const { profile } = useAuth();
+  const [teacherId, setTeacherId] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('active');
+  const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form, setForm] = useState(initialForm);
+
+  const loadAssignments = async (id) => {
+    const data = await assignmentService.getForTeacher(id);
+    setAssignments(data || []);
+  };
 
   useEffect(() => {
-    mockApi.getAssignments(activeTab).then(result => {
-      setAssignments(result);
-      setLoading(false);
-    });
-  }, [activeTab]);
+    const load = async () => {
+      try {
+        setLoading(true);
+        const teacher = await teacherService.getByProfile(profile.id);
+        setTeacherId(teacher.id);
 
-  if (loading) {
-    return (
-      <Layout role="teacher">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading assignments...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+        const [subRes, batchRes] = await Promise.all([
+          supabase.from('subjects').select('id, name').eq('teacher_id', teacher.id),
+          supabase.from('batches').select('id, name').order('name', { ascending: true }),
+        ]);
+        if (subRes.error) throw subRes.error;
+        if (batchRes.error) throw batchRes.error;
+        setSubjects(subRes.data || []);
+        setBatches(batchRes.data || []);
+
+        await loadAssignments(teacher.id);
+      } catch (err) {
+        setError(err.message || 'Failed to load assignments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (profile?.id) load();
+  }, [profile?.id]);
+
+  const createAssignment = async () => {
+    try {
+      await assignmentService.create({
+        ...form,
+        subject_id: Number(form.subject_id),
+        batch_id: Number(form.batch_id),
+        created_by: teacherId,
+      });
+      setIsModalOpen(false);
+      setForm(initialForm);
+      await loadAssignments(teacherId);
+    } catch (err) {
+      setError(err.message || 'Failed to create assignment');
+    }
+  };
+
+  if (loading) return <LoadingState role="teacher" />;
+  if (error) return <ErrorState role="teacher" message={error} />;
 
   return (
     <Layout role="teacher">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Assignments</h1>
-            <p className="text-gray-400">Create and manage assignments</p>
-          </div>
-          <Button icon={Plus}>Create Assignment</Button>
+        <PageHeader
+          title="Assignments"
+          subtitle="Create and track submissions for your classes"
+          action={<Button onClick={() => setIsModalOpen(true)}>Create Assignment</Button>}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {assignments.length === 0 && (
+            <Card><p className="text-sm text-text-muted dark:text-text-muted-dark">No assignments yet.</p></Card>
+          )}
+          {assignments.map((a) => {
+            const total = (a.assignment_submissions || []).length;
+            const submitted = (a.assignment_submissions || []).filter((s) => s.status === 'submitted').length;
+            return (
+              <Card key={a.id}>
+                <h3 className="font-semibold mb-1">{a.title}</h3>
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mb-3">{a.description || 'No description'}</p>
+                <div className="text-sm space-y-1">
+                  <p>Subject: {a.subjects?.name || '-'}</p>
+                  <p>Batch: {a.batches?.name || '-'}</p>
+                  <p>Due: {new Date(a.due_date).toLocaleString()}</p>
+                  <p className="font-medium">Submissions: {submitted}/{total}</p>
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
-        <div className="flex gap-4 border-b border-dark-300">
-          {['active', 'completed', 'draft'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 px-4 font-medium transition-colors capitalize ${
-                activeTab === tab
-                  ? 'text-gold border-b-2 border-gold'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Assignment">
+          <div className="space-y-3">
+            <input
+              value={form.title}
+              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              placeholder="Title"
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              rows={3}
+              placeholder="Description"
+              className="w-full px-3 py-2 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <select
+              value={form.subject_id}
+              onChange={(e) => setForm((p) => ({ ...p, subject_id: e.target.value }))}
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
             >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assignments.map((assignment) => (
-            <Card key={assignment.id} hover>
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">{assignment.title}</h3>
-                <Badge
-                  variant={
-                    assignment.status === 'Active' ? 'success' :
-                    assignment.status === 'Completed' ? 'default' : 'warning'
-                  }
-                  size="sm"
-                >
-                  {assignment.status}
-                </Badge>
-              </div>
-
-              <div className="space-y-2 text-sm mb-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Subject:</span>
-                  <span className="text-white">{assignment.subject}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Batch:</span>
-                  <Badge variant="primary" size="sm">{assignment.batch}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Due Date:</span>
-                  <span className="text-white">{assignment.dueDate}</span>
-                </div>
-                {assignment.submittedCount !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Submitted:</span>
-                    <span className="text-gold font-semibold">
-                      {assignment.submittedCount}/{assignment.totalStudents}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" className="flex-1">View Details</Button>
-                <Button variant="outline" size="sm">Edit</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+              <option value="">Select Subject</option>
+              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <select
+              value={form.batch_id}
+              onChange={(e) => setForm((p) => ({ ...p, batch_id: e.target.value }))}
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            >
+              <option value="">Select Batch</option>
+              {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <input
+              type="datetime-local"
+              value={form.due_date}
+              onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={createAssignment} disabled={!form.title || !form.subject_id || !form.batch_id || !form.due_date}>Create</Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </Layout>
   );

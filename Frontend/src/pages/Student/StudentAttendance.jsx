@@ -1,74 +1,95 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, TrendingUp } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../../components/Layout/Layout';
+import PageHeader from '../../components/UI/PageHeader';
 import Card from '../../components/UI/Card';
-import Badge from '../../components/UI/Badge';
-import { mockApi } from '../../api/mockData';
+import DataTable from '../../components/UI/DataTable';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import { useAuth } from '../../contexts/AuthContext';
+import { studentService } from '../../services/students';
+import { attendanceService } from '../../services/attendance';
 
 const StudentAttendance = () => {
-  const [data, setData] = useState(null);
+  const { profile } = useAuth();
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    mockApi.getStudentAttendance().then(result => {
-      setData(result);
-      setLoading(false);
-    });
-  }, []);
+    const load = async () => {
+      try {
+        setLoading(true);
+        const student = await studentService.getMyProfile(profile.id);
+        const rows = await attendanceService.getMyHistory(student.id);
+        setHistory(rows || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load attendance');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) {
-    return (
-      <Layout role="student">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading attendance data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+    if (profile?.id) load();
+  }, [profile?.id]);
+
+  const summary = useMemo(() => {
+    const total = history.length;
+    const present = history.filter((h) => h.status === 'present').length;
+    const absent = history.filter((h) => h.status === 'absent').length;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { total, present, absent, pct };
+  }, [history]);
+
+  const heatMap = useMemo(() => {
+    const byDate = {};
+    history.forEach((h) => {
+      if (!byDate[h.date]) byDate[h.date] = { total: 0, present: 0 };
+      byDate[h.date].total += 1;
+      if (h.status === 'present') byDate[h.date].present += 1;
+    });
+    return Object.entries(byDate).map(([date, v]) => ({
+      date,
+      pct: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
+    }));
+  }, [history]);
+
+  if (loading) return <LoadingState role="student" />;
+  if (error) return <ErrorState role="student" message={error} />;
 
   return (
     <Layout role="student">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">My Attendance</h1>
-          <p className="text-gray-400">Track your attendance record</p>
+        <PageHeader title="Attendance" subtitle="Monthly heatmap and subject-wise attendance history" />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card><p className="text-sm text-text-muted dark:text-text-muted-dark">Present</p><p className="text-2xl font-bold">{summary.present}</p></Card>
+          <Card><p className="text-sm text-text-muted dark:text-text-muted-dark">Total Classes</p><p className="text-2xl font-bold">{summary.total}</p></Card>
+          <Card><p className="text-sm text-text-muted dark:text-text-muted-dark">Attendance %</p><p className="text-2xl font-bold">{summary.pct}%</p></Card>
         </div>
 
-        {/* Overall Attendance */}
         <Card>
-          <div className="text-center">
-            <Calendar className="w-12 h-12 text-primary mx-auto mb-4" />
-            <p className="text-gray-400 mb-2">Overall Attendance</p>
-            <p className="text-6xl font-bold text-primary mb-2">{data.overall}%</p>
-            <p className="text-sm text-gray-400">Keep it above 85% for eligibility</p>
-          </div>
-        </Card>
-
-        {/* Attendance History */}
-        <Card>
-          <h3 className="text-lg font-semibold text-white mb-4">Attendance History</h3>
-          <div className="space-y-2">
-            {data.history.map((record) => (
-              <div key={record.id} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg">
-                <div>
-                  <p className="text-white font-medium">{record.date}</p>
-                  <p className="text-sm text-gray-400">{record.batch}</p>
-                </div>
-                <Badge
-                  variant={
-                    record.status === 'present' ? 'success' :
-                    record.status === 'late' ? 'warning' : 'danger'
-                  }
-                  size="sm"
-                >
-                  {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                </Badge>
+          <h3 className="text-lg font-semibold mb-4">Monthly Heatmap</h3>
+          <div className="grid grid-cols-7 md:grid-cols-10 gap-2">
+            {heatMap.slice(0, 31).map((d) => (
+              <div key={d.date} className="text-center">
+                <div className={`h-10 rounded-btn border border-border dark:border-border-dark ${d.pct >= 85 ? 'bg-success/30' : d.pct >= 60 ? 'bg-warning/30' : 'bg-danger/30'}`} />
+                <p className="text-[10px] mt-1 text-text-muted dark:text-text-muted-dark">{new Date(d.date).getDate()}</p>
               </div>
             ))}
           </div>
+        </Card>
+
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Attendance Records</h3>
+          <DataTable
+            columns={[
+              { key: 'date', label: 'Date' },
+              { key: 'subject', label: 'Subject', render: (r) => r.subjects?.name || '-' },
+              { key: 'status', label: 'Status', render: (r) => (r.status || '').toUpperCase() },
+            ]}
+            rows={history}
+            emptyMessage="No attendance records found"
+          />
         </Card>
       </div>
     </Layout>

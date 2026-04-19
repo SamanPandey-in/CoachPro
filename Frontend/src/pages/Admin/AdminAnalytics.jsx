@@ -1,151 +1,186 @@
-import React, { useEffect, useState } from 'react';
-import { TrendingUp, Users, Award, Calendar, BarChart3 } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import Layout from '../../components/Layout/Layout';
-import StatCard from '../../components/UI/StatCard';
 import Card from '../../components/UI/Card';
-import { mockApi } from '../../api/mockData';
+import PageHeader from '../../components/UI/PageHeader';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import Button from '../../components/UI/Button';
+import { supabase } from '../../lib/supabase';
+import { studentService } from '../../services/students';
 
 const CHART_BRAND = 'var(--chart-brand)';
 const CHART_MUTED = 'var(--chart-muted)';
-const CHART_ABSENT = '#E2E8F0';
 
 const AdminAnalytics = () => {
-  const [data, setData] = useState(null);
+  const [monthRange, setMonthRange] = useState(6);
+  const [students, setStudents] = useState([]);
+  const [testRows, setTestRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    mockApi.getAnalytics().then(result => {
-      setData(result);
-      setLoading(false);
-    });
+    const load = async () => {
+      try {
+        const [studentRows, resultsRes] = await Promise.all([
+          studentService.getAll(),
+          supabase
+            .from('test_results')
+            .select('marks, is_absent, tests(test_date, subjects(name), batches(name), max_marks)')
+            .eq('is_absent', false),
+        ]);
+
+        if (resultsRes.error) throw resultsRes.error;
+
+        setStudents(studentRows || []);
+        setTestRows(resultsRes.data || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  if (loading) {
-    return (
-      <Layout role="admin">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading analytics...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const monthlyEnrollment = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - (monthRange - 1), 1);
+    const map = {};
+    (students || []).forEach((s) => {
+      if (!s.admission_date) return;
+      const d = new Date(s.admission_date);
+      if (d < cutoff) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map[key]) {
+        map[key] = {
+          month: d.toLocaleString('en-US', { month: 'short' }),
+          enrolled: 0,
+        };
+      }
+      map[key].enrolled += 1;
+    });
+
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, value]) => value);
+  }, [students, monthRange]);
+
+  const subjectAverages = useMemo(() => {
+    const agg = {};
+    (testRows || []).forEach((row) => {
+      const subject = row.tests?.subjects?.name;
+      const max = row.tests?.max_marks || 100;
+      if (!subject || row.marks == null) return;
+      if (!agg[subject]) agg[subject] = { subject, totalPct: 0, count: 0 };
+      agg[subject].totalPct += (Number(row.marks) / max) * 100;
+      agg[subject].count += 1;
+    });
+
+    return Object.values(agg)
+      .map((item) => ({ subject: item.subject, avgScore: Math.round(item.totalPct / item.count) }))
+      .sort((a, b) => b.avgScore - a.avgScore);
+  }, [testRows]);
+
+  const batchComparison = useMemo(() => {
+    const agg = {};
+    (testRows || []).forEach((row) => {
+      const batch = row.tests?.batches?.name || 'Unassigned';
+      const max = row.tests?.max_marks || 100;
+      if (row.marks == null) return;
+      if (!agg[batch]) agg[batch] = { batch, totalPct: 0, count: 0 };
+      agg[batch].totalPct += (Number(row.marks) / max) * 100;
+      agg[batch].count += 1;
+    });
+
+    return Object.values(agg)
+      .map((item) => ({ batch: item.batch, avgScore: Math.round(item.totalPct / item.count) }))
+      .sort((a, b) => b.avgScore - a.avgScore);
+  }, [testRows]);
+
+  const exportCSV = () => {
+    const rows = [['Section', 'Name', 'Value']];
+    monthlyEnrollment.forEach((item) => rows.push(['Monthly Enrollment', item.month, item.enrolled]));
+    subjectAverages.forEach((item) => rows.push(['Subject Average', item.subject, item.avgScore]));
+    batchComparison.forEach((item) => rows.push(['Batch Comparison', item.batch, item.avgScore]));
+
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'analytics-export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading) return <LoadingState role="admin" />;
+  if (error) return <ErrorState role="admin" message={error} />;
 
   return (
     <Layout role="admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Analytics</h1>
-          <p className="text-gray-400">Comprehensive performance and attendance analytics</p>
-        </div>
+        <PageHeader
+          title="Analytics"
+          subtitle="Historical trends, subject insights, and batch-level comparisons"
+          action={
+            <div className="flex items-center gap-2">
+              <select
+                value={monthRange}
+                onChange={(e) => setMonthRange(Number(e.target.value))}
+                className="h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark text-sm"
+              >
+                <option value={3}>Last 3 months</option>
+                <option value={6}>Last 6 months</option>
+                <option value={12}>Last 12 months</option>
+              </select>
+              <Button variant="outline" icon={Download} onClick={exportCSV}>Export CSV</Button>
+            </div>
+          }
+        />
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm mb-1">Total Revenue</p>
-              <p className="text-2xl font-bold text-gold">{data.overview.totalRevenue}</p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm mb-1">New Admissions</p>
-              <p className="text-2xl font-bold text-primary">{data.overview.newAdmissions}</p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm mb-1">Avg Attendance</p>
-              <p className="text-2xl font-bold text-green-400">{data.overview.avgAttendance}%</p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm mb-1">Pass Percentage</p>
-              <p className="text-2xl font-bold text-purple-400">{data.overview.passPercentage}%</p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm mb-1">Top Batch</p>
-              <p className="text-2xl font-bold text-white">{data.overview.topBatch}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Student Growth */}
         <Card>
-          <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-white">Student Growth</h3>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data.studentGrowth}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="month" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Area type="monotone" dataKey="students" stroke={CHART_BRAND} fill={CHART_BRAND} fillOpacity={0.3} />
-            </AreaChart>
+          <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark mb-4">Monthly Enrollment Trend</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={monthlyEnrollment}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+              <XAxis dataKey="month" stroke="#64748B" />
+              <YAxis stroke="#64748B" />
+              <Tooltip />
+              <Line type="monotone" dataKey="enrolled" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 4 }} />
+            </LineChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Performance Distribution & Attendance */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card>
-            <div className="flex items-center gap-2 mb-6">
-              <Award className="w-5 h-5 text-gold" />
-              <h3 className="text-lg font-semibold text-white">Performance Distribution</h3>
-            </div>
+            <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark mb-4">Subject-wise Average Scores</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.performanceDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                <XAxis dataKey="range" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-                <Bar dataKey="count" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
+              <BarChart data={subjectAverages} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                <XAxis type="number" stroke="#64748B" />
+                <YAxis type="category" dataKey="subject" stroke="#64748B" width={110} />
+                <Tooltip />
+                <Bar dataKey="avgScore" fill={CHART_BRAND} radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           <Card>
-            <div className="flex items-center gap-2 mb-6">
-              <Calendar className="w-5 h-5 text-green-500" />
-              <h3 className="text-lg font-semibold text-white">Attendance Distribution</h3>
-            </div>
+            <h3 className="text-lg font-semibold text-text-primary dark:text-text-primary-dark mb-4">Batch Comparison</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={data.attendanceDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
-                  {data.attendanceDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? CHART_BRAND : CHART_ABSENT} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-                <Legend />
-              </PieChart>
+              <BarChart data={batchComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                <XAxis dataKey="batch" stroke="#64748B" />
+                <YAxis stroke="#64748B" />
+                <Tooltip />
+                <Bar dataKey="avgScore" fill={CHART_MUTED} radius={[8, 8, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </Card>
         </div>
-
-        {/* Subject Performance */}
-        <Card>
-          <div className="flex items-center gap-2 mb-6">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-white">Subject-wise Performance</h3>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.subjectPerformance} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis type="number" stroke="#9ca3af" />
-              <YAxis type="category" dataKey="subject" stroke="#9ca3af" width={100} />
-              <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Bar dataKey="avgScore" fill={CHART_MUTED} radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
       </div>
     </Layout>
   );

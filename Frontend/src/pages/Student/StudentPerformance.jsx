@@ -1,116 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { TrendingUp, Award } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../../components/Layout/Layout';
+import PageHeader from '../../components/UI/PageHeader';
 import Card from '../../components/UI/Card';
-import Badge from '../../components/UI/Badge';
-import { mockApi } from '../../api/mockData';
+import DataTable from '../../components/UI/DataTable';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import { useAuth } from '../../contexts/AuthContext';
+import { studentService } from '../../services/students';
+import { testService } from '../../services/tests';
 
 const CHART_BRAND = 'var(--chart-brand)';
-const CHART_MUTED = 'var(--chart-muted)';
 
 const StudentPerformance = () => {
-  const [data, setData] = useState(null);
+  const { profile } = useAuth();
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    mockApi.getStudentPerformance().then(result => {
-      setData(result);
-      setLoading(false);
-    });
-  }, []);
+    const load = async () => {
+      try {
+        setLoading(true);
+        const student = await studentService.getMyProfile(profile.id);
+        const rows = await testService.getMyResults(student.id);
+        setResults(rows || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load results');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) {
-    return (
-      <Layout role="student">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading performance data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+    if (profile?.id) load();
+  }, [profile?.id]);
+
+  const subjectWise = useMemo(() => {
+    const map = {};
+    results.forEach((r) => {
+      const subject = r.tests?.subjects?.name || 'Unknown';
+      const max = r.tests?.max_marks || 100;
+      if (r.marks == null || r.is_absent) return;
+      if (!map[subject]) map[subject] = { subject, total: 0, count: 0 };
+      map[subject].total += (Number(r.marks) / max) * 100;
+      map[subject].count += 1;
+    });
+    return Object.values(map)
+      .map((v) => ({ subject: v.subject, avgPct: Math.round(v.total / v.count) }))
+      .sort((a, b) => b.avgPct - a.avgPct);
+  }, [results]);
+
+  const bestSubject = subjectWise[0]?.subject || 'N/A';
+  const weakSubject = subjectWise[subjectWise.length - 1]?.subject || 'N/A';
+
+  if (loading) return <LoadingState role="student" />;
+  if (error) return <ErrorState role="student" message={error} />;
 
   return (
     <Layout role="student">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">My Performance</h1>
-          <p className="text-gray-400">Detailed academic performance analysis</p>
-        </div>
+        <PageHeader title="My Results" subtitle="Subject-wise performance, full history, and strengths/weaknesses" />
 
-        {/* Overall Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <div className="text-center">
-              <Award className="w-8 h-8 text-gold mx-auto mb-2" />
-              <p className="text-gray-400 text-sm mb-1">Current Rank</p>
-              <p className="text-4xl font-bold text-gold">#{data.overall.currentRank}</p>
-            </div>
+            <h3 className="font-semibold mb-2">Best Subject</h3>
+            <p className="text-text-primary dark:text-text-primary-dark">{bestSubject}</p>
           </Card>
           <Card>
-            <div className="text-center">
-              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <p className="text-gray-400 text-sm mb-1">Overall Percentage</p>
-              <p className="text-4xl font-bold text-green-400">{data.overall.overallPercentage}%</p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <Award className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="text-gray-400 text-sm mb-1">Attendance</p>
-              <p className="text-4xl font-bold text-primary">{data.overall.attendance}%</p>
-            </div>
+            <h3 className="font-semibold mb-2">Needs Improvement</h3>
+            <p className="text-text-primary dark:text-text-primary-dark">{weakSubject}</p>
           </Card>
         </div>
 
-        {/* Performance Trend */}
         <Card>
-          <h3 className="text-lg font-semibold text-white mb-4">Performance Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="month" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Line type="monotone" dataKey="percentage" stroke={CHART_BRAND} strokeWidth={3} dot={{ r: 5, fill: CHART_MUTED }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Subject Performance */}
-        <Card>
-          <h3 className="text-lg font-semibold text-white mb-4">Subject-wise Performance</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.subjects}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="subject" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px' }} />
-              <Bar dataKey="percentage" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
+          <h3 className="text-lg font-semibold mb-4">Subject-wise Average</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={subjectWise}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+              <XAxis dataKey="subject" stroke="#64748B" />
+              <YAxis stroke="#64748B" />
+              <Tooltip />
+              <Bar dataKey="avgPct" fill={CHART_BRAND} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Recent Tests */}
         <Card>
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Test Results</h3>
-          <div className="space-y-3">
-            {data.tests.map((test) => (
-              <div key={test.id} className="flex items-center justify-between p-4 bg-dark-200 rounded-lg hover:bg-dark-300 transition-colors">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-white mb-1">{test.name}</h4>
-                  <p className="text-sm text-gray-400">{test.subject} • {test.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-gold">{test.marks}/{test.maxMarks}</p>
-                  <Badge variant={test.grade === 'A' ? 'success' : 'primary'} size="sm">Grade {test.grade}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+          <h3 className="text-lg font-semibold mb-4">Test History</h3>
+          <DataTable
+            columns={[
+              { key: 'title', label: 'Test', render: (r) => r.tests?.title || '-' },
+              { key: 'date', label: 'Date', render: (r) => r.tests?.test_date || '-' },
+              { key: 'subject', label: 'Subject', render: (r) => r.tests?.subjects?.name || '-' },
+              { key: 'marks', label: 'Marks', render: (r) => (r.is_absent ? 'Absent' : `${r.marks ?? '-'} / ${r.tests?.max_marks ?? 100}`) },
+              {
+                key: 'pct',
+                label: 'Percentage',
+                render: (r) => {
+                  if (r.is_absent || r.marks == null) return '-';
+                  const max = r.tests?.max_marks || 100;
+                  return `${Math.round((Number(r.marks) / max) * 100)}%`;
+                },
+              },
+            ]}
+            rows={results}
+            emptyMessage="No test history found"
+          />
         </Card>
       </div>
     </Layout>

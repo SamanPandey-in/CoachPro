@@ -1,121 +1,123 @@
-import React, { useEffect, useState } from 'react';
-import { ClipboardList, AlertCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../../components/Layout/Layout';
+import PageHeader from '../../components/UI/PageHeader';
 import Card from '../../components/UI/Card';
-import Badge from '../../components/UI/Badge';
 import Button from '../../components/UI/Button';
-import { mockApi } from '../../api/mockData';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import Modal from '../../components/UI/Modal';
+import { useAuth } from '../../contexts/AuthContext';
+import { studentService } from '../../services/students';
+import { assignmentService } from '../../services/assignments';
 
 const StudentAssignments = () => {
+  const { profile } = useAuth();
+  const [student, setStudent] = useState(null);
   const [assignments, setAssignments] = useState([]);
+  const [tab, setTab] = useState('all');
+  const [selected, setSelected] = useState(null);
+  const [submissionUrl, setSubmissionUrl] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [error, setError] = useState(null);
+
+  const loadAssignments = async (studentObj) => {
+    const rows = await assignmentService.getForStudent(studentObj.id, studentObj.batch_id);
+    setAssignments(rows || []);
+  };
 
   useEffect(() => {
-    mockApi.getStudentAssignments().then(result => {
-      setAssignments(result);
-      setLoading(false);
-    });
-  }, []);
+    const load = async () => {
+      try {
+        setLoading(true);
+        const s = await studentService.getMyProfile(profile.id);
+        setStudent(s);
+        await loadAssignments(s);
+      } catch (err) {
+        setError(err.message || 'Failed to load assignments');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) {
-    return (
-      <Layout role="student">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading assignments...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+    if (profile?.id) load();
+  }, [profile?.id]);
+
+  const filtered = useMemo(() => {
+    const now = new Date();
+    return assignments.filter((a) => {
+      const status = a.my_submission?.status || 'pending';
+      const overdue = new Date(a.due_date) < now && status !== 'submitted';
+      if (tab === 'all') return true;
+      if (tab === 'pending') return status === 'pending' && !overdue;
+      if (tab === 'submitted') return status === 'submitted';
+      if (tab === 'overdue') return overdue;
+      return true;
+    });
+  }, [assignments, tab]);
+
+  const submitAssignment = async () => {
+    if (!selected || !student) return;
+    try {
+      await assignmentService.submit(selected.id, student.id, submissionUrl);
+      setSelected(null);
+      setSubmissionUrl('');
+      await loadAssignments(student);
+    } catch (err) {
+      setError(err.message || 'Failed to submit assignment');
+    }
+  };
+
+  if (loading) return <LoadingState role="student" />;
+  if (error) return <ErrorState role="student" message={error} />;
 
   return (
     <Layout role="student">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">My Assignments</h1>
-          <p className="text-gray-400">Track and submit your assignments</p>
+        <PageHeader title="Assignments" subtitle="All assignments for your batch with submit workflow" />
+
+        <div className="flex flex-wrap gap-2">
+          {['all', 'pending', 'submitted', 'overdue'].map((k) => (
+            <Button key={k} variant={tab === k ? 'primary' : 'ghost'} onClick={() => setTab(k)}>
+              {k.charAt(0).toUpperCase() + k.slice(1)}
+            </Button>
+          ))}
         </div>
 
-        <div className="flex gap-4 border-b border-dark-300">
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`pb-3 px-4 font-medium transition-colors ${
-              activeTab === 'pending'
-                ? 'text-gold border-b-2 border-gold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`pb-3 px-4 font-medium transition-colors ${
-              activeTab === 'completed'
-                ? 'text-gold border-b-2 border-gold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Completed
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {assignments.map((assignment) => {
-            const daysRemaining = Math.floor((new Date(assignment.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
-            const isOverdue = daysRemaining < 0;
-            const isDueSoon = daysRemaining <= 2 && daysRemaining >= 0;
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filtered.length === 0 && (
+            <Card><p className="text-sm text-text-muted dark:text-text-muted-dark">No assignments in this filter.</p></Card>
+          )}
+          {filtered.map((a) => {
+            const status = a.my_submission?.status || 'pending';
             return (
-              <Card key={assignment.id} hover className={isOverdue ? 'border-red-500/50' : isDueSoon ? 'border-yellow-500/50' : ''}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-1">{assignment.title}</h3>
-                    <p className="text-sm text-gray-400">{assignment.subject}</p>
-                  </div>
-                  {isOverdue ? (
-                    <Badge variant="danger" size="sm">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Overdue
-                    </Badge>
-                  ) : isDueSoon ? (
-                    <Badge variant="warning" size="sm">Due Soon</Badge>
-                  ) : (
-                    <Badge variant="success" size="sm">Active</Badge>
-                  )}
-                </div>
-
-                <p className="text-gray-300 text-sm mb-4 line-clamp-2">{assignment.description}</p>
-
-                <div className="space-y-2 text-sm mb-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Assigned:</span>
-                    <span className="text-white">{assignment.assignedDate}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Due Date:</span>
-                    <span className={`font-semibold ${isOverdue ? 'text-red-400' : isDueSoon ? 'text-yellow-400' : 'text-white'}`}>
-                      {assignment.dueDate}
-                    </span>
-                  </div>
-                  {assignment.maxMarks && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Max Marks:</span>
-                      <span className="text-gold font-semibold">{assignment.maxMarks}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" className="flex-1">View Details</Button>
-                  <Button variant="primary" size="sm">Submit</Button>
-                </div>
+              <Card key={a.id}>
+                <h3 className="font-semibold mb-1">{a.title}</h3>
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mb-2">{a.subjects?.name || '-'}</p>
+                <p className="text-sm mb-3">Due: {new Date(a.due_date).toLocaleString()}</p>
+                <p className="text-xs text-text-muted dark:text-text-muted-dark mb-3">Status: {status}</p>
+                {status !== 'submitted' && (
+                  <Button size="sm" onClick={() => setSelected(a)}>Submit</Button>
+                )}
               </Card>
             );
           })}
         </div>
+
+        <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Submit Assignment">
+          <div className="space-y-3">
+            <p className="text-sm text-text-muted dark:text-text-muted-dark">{selected?.title}</p>
+            <input
+              value={submissionUrl}
+              onChange={(e) => setSubmissionUrl(e.target.value)}
+              placeholder="Submission link"
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSelected(null)}>Cancel</Button>
+              <Button onClick={submitAssignment} disabled={!submissionUrl.trim()}>Submit</Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </Layout>
   );

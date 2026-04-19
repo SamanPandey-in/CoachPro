@@ -1,102 +1,151 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, Send, Filter } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
-import Card from '../../components/UI/Card';
+import PageHeader from '../../components/UI/PageHeader';
 import Button from '../../components/UI/Button';
-import Badge from '../../components/UI/Badge';
-import { mockApi } from '../../api/mockData';
+import Card from '../../components/UI/Card';
+import LoadingState from '../../components/UI/LoadingState';
+import ErrorState from '../../components/UI/ErrorState';
+import { useAuth } from '../../contexts/AuthContext';
+import { notificationService } from '../../services/notifications';
+import { supabase } from '../../lib/supabase';
+
+const initialForm = {
+  title: '',
+  body: '',
+  target: 'all',
+  batchId: '',
+};
 
 const AdminNotifications = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('received');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    mockApi.getNotifications('admin').then(result => {
-      setNotifications(result);
-      setLoading(false);
+    const load = async () => {
+      try {
+        setLoading(true);
+        const [notifRes, batchRes] = await Promise.all([
+          notificationService.getForRole('admin'),
+          supabase.from('batches').select('id, name').order('name', { ascending: true }),
+        ]);
+        if (batchRes.error) throw batchRes.error;
+        setNotifications(notifRes || []);
+        setBatches(batchRes.data || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load notifications');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+
+    const channel = notificationService.subscribeByRole('admin', (item) => {
+      setNotifications((prev) => [item, ...prev]);
     });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <Layout role="admin">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading notifications...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const sendNotification = async () => {
+    try {
+      setSending(true);
+      await notificationService.create({
+        title: form.title,
+        body: form.body,
+        sent_by: user?.id || null,
+        target_role: form.target === 'all' ? null : form.target,
+        target_batch_id: form.batchId ? Number(form.batchId) : null,
+      });
+      setForm(initialForm);
+    } catch (err) {
+      setError(err.message || 'Failed to send notification');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) return <LoadingState role="admin" />;
+  if (error) return <ErrorState role="admin" message={error} />;
 
   return (
     <Layout role="admin">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Notifications</h1>
-            <p className="text-gray-400">Manage and send notifications</p>
+        <PageHeader title="Notifications" subtitle="Broadcast messages to all users, roles, or specific batches" />
+
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Compose Broadcast</h3>
+          <div className="space-y-3">
+            <input
+              value={form.title}
+              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              placeholder="Notification title"
+              className="w-full h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <textarea
+              value={form.body}
+              onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+              rows={4}
+              placeholder="Notification body"
+              className="w-full px-3 py-2 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <select
+                value={form.target}
+                onChange={(e) => setForm((p) => ({ ...p, target: e.target.value }))}
+                className="h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admins</option>
+                <option value="teacher">Teachers</option>
+                <option value="student">Students</option>
+              </select>
+              <select
+                value={form.batchId}
+                onChange={(e) => setForm((p) => ({ ...p, batchId: e.target.value }))}
+                className="h-10 px-3 rounded-btn border border-border dark:border-border-dark bg-surface dark:bg-surface-dark"
+              >
+                <option value="">All Batches</option>
+                {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={sendNotification} disabled={sending || !form.title || !form.body}>
+                {sending ? 'Sending...' : 'Send Notification'}
+              </Button>
+            </div>
           </div>
-          <Button icon={Send}>Send Notification</Button>
-        </div>
+        </Card>
 
-        <div className="flex gap-4 border-b border-dark-300">
-          <button
-            onClick={() => setActiveTab('received')}
-            className={`pb-3 px-4 font-medium transition-colors ${
-              activeTab === 'received'
-                ? 'text-gold border-b-2 border-gold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Received
-          </button>
-          <button
-            onClick={() => setActiveTab('sent')}
-            className={`pb-3 px-4 font-medium transition-colors ${
-              activeTab === 'sent'
-                ? 'text-gold border-b-2 border-gold'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Sent
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {notifications.map((notif) => (
-            <Card key={notif.id} hover className={!notif.isRead ? 'border-gold/30' : ''}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-white">{notif.title}</h3>
-                    {!notif.isRead && <Badge variant="gold" size="sm">New</Badge>}
-                    <Badge
-                      variant={
-                        notif.priority === 'high' ? 'danger' :
-                        notif.priority === 'normal' ? 'primary' : 'default'
-                      }
-                      size="sm"
-                    >
-                      {notif.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-gray-300 mb-3">{notif.message}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <span>From: {notif.senderName}</span>
-                    <span>•</span>
-                    <span>{notif.date} at {notif.time}</span>
-                    <span>•</span>
-                    <Badge variant="default" size="sm">{notif.type}</Badge>
-                  </div>
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Notification History</h3>
+          <div className="space-y-3">
+            {notifications.length === 0 && (
+              <p className="text-sm text-text-muted dark:text-text-muted-dark">No notifications yet.</p>
+            )}
+            {notifications.map((n) => (
+              <div key={n.id} className="p-4 rounded-card border border-border dark:border-border-dark bg-bg dark:bg-bg-dark">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <h4 className="font-semibold text-text-primary dark:text-text-primary-dark">{n.title}</h4>
+                  <span className="text-xs text-text-muted dark:text-text-muted-dark">
+                    {new Date(n.created_at).toLocaleString()}
+                  </span>
                 </div>
-                <Bell className="w-5 h-5 text-gray-400" />
+                <p className="text-sm text-text-muted dark:text-text-muted-dark mb-2">{n.body}</p>
+                <p className="text-xs text-text-muted dark:text-text-muted-dark">
+                  Target Role: {n.target_role || 'all'} | Batch: {n.target_batch_id || 'all'}
+                </p>
               </div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Card>
       </div>
     </Layout>
   );

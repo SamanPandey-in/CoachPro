@@ -89,7 +89,6 @@ export const ROUTES = {
     ANALYTICS: '/admin/analytics',
     ATTENDANCE: '/admin/attendance',
     TESTS: '/admin/tests',
-    AI_INSIGHTS: '/admin/ai-insights',
     NOTIFICATIONS: '/admin/notifications',
   },
   TEACHER: {
@@ -105,7 +104,6 @@ export const ROUTES = {
     DASHBOARD: '/student/dashboard',
     PERFORMANCE: '/student/performance',
     ATTENDANCE: '/student/attendance',
-    TESTS: '/student/tests',
     ASSIGNMENTS: '/student/assignments',
     PROGRESS: '/student/progress',
     NOTIFICATIONS: '/student/notifications',
