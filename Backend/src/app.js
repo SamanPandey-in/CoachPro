@@ -33,10 +33,26 @@ try {
 } catch (e) {}
 
 try {
+  app.use('/api/v1/institutes', require('./features/institutes/institutes.routes'));
+} catch (e) {}
+
+try {
   app.use('/api/v1/batches', require('./features/batches/batches.routes'));
 } catch (e) {}
 try {
   app.use('/api/v1/students', require('./features/students/students.routes'));
+} catch (e) {}
+
+try {
+  app.use('/api/v1/tests', require('./features/tests/tests.routes'));
+} catch (e) {}
+
+try {
+  app.use('/api/v1/reports', require('./features/reports/reports.routes'));
+} catch (e) {}
+
+try {
+  app.use('/api/v1/analytics', require('./features/analytics/analytics.routes'));
 } catch (e) {}
 
 try {
