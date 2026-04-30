@@ -13,9 +13,10 @@ const ADMIN_NAV = [
   { to: '/admin/attendance', label: 'Attendance', icon: ClipboardList },
   { to: '/admin/tests', label: 'Tests & Marks', icon: GraduationCap },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/admin/reports', label: 'Reports', icon: BookOpen },
   { to: '/admin/biometric', label: 'Biometric', icon: Fingerprint },
   { to: '/admin/notifications', label: 'Notifications', icon: Bell },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/institute', label: 'Institute', icon: Settings },
 ];
 
 const TEACHER_NAV = [

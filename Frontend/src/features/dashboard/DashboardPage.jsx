@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
+import { useGetDashboardStatsQuery } from './dashboardApi';
 
 function StatCard({ label, value, icon: Icon, color = 'blue' }) {
   const colorMap = {
@@ -27,6 +28,8 @@ function StatCard({ label, value, icon: Icon, color = 'blue' }) {
 
 export default function DashboardPage() {
   const user = useSelector(selectCurrentUser);
+  const { data, isLoading, isError } = useGetDashboardStatsQuery();
+  const stats = data?.data;
 
   return (
     <div className="space-y-6">
@@ -38,17 +41,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Students" value="0" icon={Users} color="blue" />
-        <StatCard label="Active Batches" value="0" icon={BookOpen} color="green" />
-        <StatCard label="Today's Attendance" value="0%" icon={UserCheck} color="purple" />
-        <StatCard label="Teachers" value="0" icon={TrendingUp} color="orange" />
+        <StatCard label="Total Students" value={isLoading ? '…' : stats?.total_students} icon={Users} color="blue" />
+        <StatCard label="Active Batches" value={isLoading ? '…' : stats?.total_batches} icon={BookOpen} color="green" />
+        <StatCard label="Today's Attendance" value={isLoading ? '…' : `${stats?.today_attendance_pct ?? 0}%`} icon={UserCheck} color="purple" />
+        <StatCard label="Teachers" value={isLoading ? '…' : stats?.total_teachers} icon={TrendingUp} color="orange" />
       </div>
 
       <div className="bg-white rounded-xl border border-surface-200 shadow-sm p-6">
         <h2 className="text-base font-semibold text-surface-900 mb-4">Welcome, {user?.name}!</h2>
-        <p className="text-surface-600 text-sm">
-          CoachOps is now configured per the master guide. Use the sidebar to navigate to students, batches, attendance, and other modules.
-        </p>
+        {isError ? (
+          <p className="text-sm text-red-600">Unable to load dashboard statistics.</p>
+        ) : (
+          <div className="space-y-3 text-surface-600 text-sm">
+            <p>CoachOps is now connected to the live backend. Use the sidebar to navigate to students, batches, attendance, tests, analytics, reports, and institute settings.</p>
+            <p>Today’s attendance rate: <span className="font-medium text-surface-900">{stats?.today_attendance_pct ?? 0}%</span></p>
+          </div>
+        )}
       </div>
     </div>
   );
