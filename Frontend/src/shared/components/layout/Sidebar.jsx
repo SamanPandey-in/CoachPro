@@ -50,8 +50,8 @@ export default function Sidebar({ role = 'admin' }) {
   };
 
   return (
-    <aside className="w-64 bg-surface-900/95 text-white flex flex-col shrink-0 border-r border-white/10 backdrop-blur-xl shadow-[12px_0_40px_rgba(15,23,42,0.12)]">
-      <div className="h-16 flex items-center px-6 border-b border-surface-700">
+    <aside className="w-64 bg-surface-900/72 text-white flex flex-col shrink-0 border-r border-white/15 backdrop-blur-3xl shadow-[12px_0_40px_rgba(15,23,42,0.18)]">
+      <div className="h-16 flex items-center px-6 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
@@ -65,7 +65,7 @@ export default function Sidebar({ role = 'admin' }) {
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="mb-4 px-3">
-          <div className="hero-chip bg-white/10 text-white border border-white/10">
+          <div className="hero-chip bg-white/12 text-white border border-white/15">
             {role === 'admin' ? 'Admin console' : role === 'teacher' ? 'Teacher space' : 'Parent portal'}
           </div>
         </div>
@@ -78,8 +78,8 @@ export default function Sidebar({ role = 'admin' }) {
               className={({ isActive }) =>
                 `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                   isActive
-                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/25'
-                    : 'text-surface-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white/14 text-white shadow-lg shadow-white/10 backdrop-blur-xl border border-white/15'
+                      : 'text-surface-300 hover:bg-white/10 hover:text-white hover:border-white/10'
                 }`
               }
             >
@@ -90,9 +90,12 @@ export default function Sidebar({ role = 'admin' }) {
         </div>
       </nav>
 
-      <div className="border-t border-white/10 p-4 space-y-3 bg-white/5">
+      <div className="border-t border-white/10 p-4 space-y-3 bg-white/6 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-linear-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center text-sm font-medium shadow-lg shadow-brand-500/20">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium shadow-lg shadow-brand-500/20 ring-1 ring-white/20"
+            style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #1D4ED8 55%, #172554 100%)' }}
+          >
             {user?.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -102,7 +105,7 @@ export default function Sidebar({ role = 'admin' }) {
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-surface-200 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 active:scale-[0.98]"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-surface-200 hover:text-white hover:bg-white/12 rounded-2xl transition-all duration-200 active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           Sign out

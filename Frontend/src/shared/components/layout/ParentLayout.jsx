@@ -6,7 +6,7 @@ export default function ParentLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-transparent">
+    <div className="flex h-screen overflow-hidden bg-transparent relative">
       <Sidebar role="parent" />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />

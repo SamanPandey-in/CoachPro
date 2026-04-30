@@ -8,8 +8,19 @@ const env = require('./shared/config/env');
 
 const app = express();
 
+const allowedOrigins = env.CLIENT_URLS;
+
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin ${origin}`));
+  },
+  credentials: true,
+}));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

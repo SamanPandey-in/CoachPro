@@ -49,7 +49,10 @@ export default function LoginPage() {
               Smarter institute operations
             </div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-linear-to-br from-brand-500 to-brand-700 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/25">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/25"
+                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 55%, #1E40AF 100%)' }}
+              >
                 <GraduationCap className="w-8 h-8 text-white" />
               </div>
               <div>

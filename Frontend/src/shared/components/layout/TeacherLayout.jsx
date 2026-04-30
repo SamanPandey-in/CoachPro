@@ -6,7 +6,7 @@ export default function TeacherLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-transparent">
+    <div className="flex h-screen overflow-hidden bg-transparent relative">
       <Sidebar role="teacher" />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
