@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectCurrentUser } from '../../../features/auth/authSlice';
+import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   BarChart3, Bell, Settings, LogOut, GraduationCap, Fingerprint
@@ -44,21 +45,30 @@ export default function Sidebar({ role = 'admin' }) {
 
   const handleLogout = () => {
     dispatch(logout());
+    toast.success('Signed out successfully');
     navigate('/login');
   };
 
   return (
-    <aside className="w-64 bg-surface-900 text-white flex flex-col shrink-0">
+    <aside className="w-64 bg-surface-900/95 text-white flex flex-col shrink-0 border-r border-white/10 backdrop-blur-xl shadow-[12px_0_40px_rgba(15,23,42,0.12)]">
       <div className="h-16 flex items-center px-6 border-b border-surface-700">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-semibold text-white">CoachOps</span>
+          <div>
+            <span className="font-semibold text-white leading-none block">CoachOps</span>
+            <span className="text-[10px] uppercase tracking-[0.24em] text-surface-400">Institute OS</span>
+          </div>
         </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <div className="mb-4 px-3">
+          <div className="hero-chip bg-white/10 text-white border border-white/10">
+            {role === 'admin' ? 'Admin console' : role === 'teacher' ? 'Teacher space' : 'Parent portal'}
+          </div>
+        </div>
         <div className="space-y-1">
           {nav.map(({ to, label, icon: Icon, end }) => (
             <NavLink
@@ -66,23 +76,23 @@ export default function Sidebar({ role = 'admin' }) {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                   isActive
-                    ? 'bg-brand-600 text-white'
-                    : 'text-surface-400 hover:bg-surface-700 hover:text-white'
+                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/25'
+                    : 'text-surface-300 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
               {label}
             </NavLink>
           ))}
         </div>
       </nav>
 
-      <div className="border-t border-surface-700 p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-sm font-medium">
+      <div className="border-t border-white/10 p-4 space-y-3 bg-white/5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-linear-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center text-sm font-medium shadow-lg shadow-brand-500/20">
             {user?.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -92,7 +102,7 @@ export default function Sidebar({ role = 'admin' }) {
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-surface-400 hover:text-white hover:bg-surface-700 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-surface-200 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200 active:scale-[0.98]"
         >
           <LogOut className="w-4 h-4" />
           Sign out

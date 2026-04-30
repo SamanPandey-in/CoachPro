@@ -57,7 +57,7 @@ const Login = () => {
   const isLoading = loading || isSubmitting;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface via-bg to-surface dark:from-surface-dark dark:via-bg-dark dark:to-surface-dark flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-surface via-bg to-surface dark:from-surface-dark dark:via-bg-dark dark:to-surface-dark flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background orbs */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl animate-pulse" />
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -66,7 +66,7 @@ const Login = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-brand to-brand dark:from-brand-light dark:to-brand rounded-3xl mb-6 shadow-2xl shadow-brand/30 transform hover:scale-105 transition-transform duration-300">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-brand to-brand dark:from-brand-light dark:to-brand rounded-3xl mb-6 shadow-2xl shadow-brand/30 transform hover:scale-105 transition-transform duration-300">
             <GraduationCap className="w-11 h-11 text-white" strokeWidth={2.5} />
           </div>
           <h1 className="text-4xl font-bold text-text-primary dark:text-text-primary-dark mb-3 tracking-tight">

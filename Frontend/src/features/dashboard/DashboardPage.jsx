@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { selectCurrentUser } from '../../features/auth/authSlice';
-import { Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
+import { Users, BookOpen, UserCheck, TrendingUp, Sparkles, ArrowRight } from 'lucide-react';
 import { useGetDashboardStatsQuery } from './dashboardApi';
 
 function StatCard({ label, value, icon: Icon, color = 'blue' }) {
@@ -32,12 +33,22 @@ export default function DashboardPage() {
   const stats = data?.data;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-surface-900">Dashboard</h1>
-        <p className="text-surface-500 text-sm mt-1">
-          {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
+    <div className="page-shell">
+      <div className="page-hero flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="hero-chip mb-3">
+            <Sparkles className="w-3.5 h-3.5" />
+            Live institute overview
+          </div>
+          <h1 className="text-2xl font-semibold text-surface-900">Dashboard</h1>
+          <p className="text-surface-500 text-sm mt-1">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/admin/students" className="btn-secondary">Open students <ArrowRight className="w-4 h-4" /></Link>
+          <Link to="/admin/attendance" className="btn-primary">Mark attendance <ArrowRight className="w-4 h-4" /></Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -47,7 +58,7 @@ export default function DashboardPage() {
         <StatCard label="Teachers" value={isLoading ? '…' : stats?.total_teachers} icon={TrendingUp} color="orange" />
       </div>
 
-      <div className="bg-white rounded-xl border border-surface-200 shadow-sm p-6">
+      <div className="panel">
         <h2 className="text-base font-semibold text-surface-900 mb-4">Welcome, {user?.name}!</h2>
         {isError ? (
           <p className="text-sm text-red-600">Unable to load dashboard statistics.</p>

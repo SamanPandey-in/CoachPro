@@ -1,29 +1,30 @@
-import { ClipboardList } from 'lucide-react';
+import { BadgeCheck, ClipboardList, Sparkles } from 'lucide-react';
+import PlaceholderPage from '../../shared/components/PlaceholderPage';
 
 export default function AttendancePage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-surface-900">Attendance</h1>
-          <p className="text-surface-500 text-sm mt-1">Mark and manage student attendance</p>
+    <PlaceholderPage
+      title="Attendance"
+      description="Track daily attendance and quickly spot gaps with a clear working surface."
+      actions={<button className="btn-primary"><BadgeCheck className="w-4 h-4" /> Mark Attendance</button>}
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="metric-card">
+          <ClipboardList className="w-5 h-5 text-brand-600 mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Daily marking</p>
+          <p className="text-sm text-surface-500 mt-1">Open a batch, mark present, absent, late, or excused in one pass.</p>
         </div>
-        <button className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors">
-          Mark Attendance
-        </button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-surface-200 shadow-sm p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-surface-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <ClipboardList className="w-6 h-6 text-surface-400" />
-            </div>
-            <p className="text-surface-600">No attendance records found</p>
-            <p className="text-sm text-surface-500 mt-1">Start by marking attendance for a batch</p>
-          </div>
+        <div className="metric-card">
+          <BadgeCheck className="w-5 h-5 text-success mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Biometric sync</p>
+          <p className="text-sm text-surface-500 mt-1">Manual overrides stay easy when the device needs correction.</p>
+        </div>
+        <div className="metric-card">
+          <Sparkles className="w-5 h-5 text-gold mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Visibility</p>
+          <p className="text-sm text-surface-500 mt-1">Heatmaps and summaries help identify patterns early.</p>
         </div>
       </div>
-    </div>
+    </PlaceholderPage>
   );
 }

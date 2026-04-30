@@ -1,29 +1,30 @@
-import { BookOpen } from 'lucide-react';
+import { BadgePlus, BookOpen, Sparkles } from 'lucide-react';
+import PlaceholderPage from '../../shared/components/PlaceholderPage';
 
 export default function BatchesPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-surface-900">Batches</h1>
-          <p className="text-surface-500 text-sm mt-1">Manage all batches and classes</p>
+    <PlaceholderPage
+      title="Batches"
+      description="Plan classes, assign teachers, and keep schedules easy to scan."
+      actions={<button className="btn-primary"><BadgePlus className="w-4 h-4" /> Add Batch</button>}
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="metric-card">
+          <BookOpen className="w-5 h-5 text-brand-600 mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Schedule view</p>
+          <p className="text-sm text-surface-500 mt-1">See timings, rooms, and capacity at a glance.</p>
         </div>
-        <button className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors">
-          Add Batch
-        </button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-surface-200 shadow-sm p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-surface-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-6 h-6 text-surface-400" />
-            </div>
-            <p className="text-surface-600">No batches found</p>
-            <p className="text-sm text-surface-500 mt-1">Create a batch to get started</p>
-          </div>
+        <div className="metric-card">
+          <Sparkles className="w-5 h-5 text-gold mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Teacher assignment</p>
+          <p className="text-sm text-surface-500 mt-1">Attach a teacher and subject without losing context.</p>
+        </div>
+        <div className="metric-card">
+          <BookOpen className="w-5 h-5 text-success mb-3" />
+          <p className="text-sm font-semibold text-surface-900">Capacity tracking</p>
+          <p className="text-sm text-surface-500 mt-1">Keep batch strength under control before it becomes a problem.</p>
         </div>
       </div>
-    </div>
+    </PlaceholderPage>
   );
 }
