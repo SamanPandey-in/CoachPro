@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const env = require('../config/env');
 
 const signAccess = (payload) =>
@@ -10,4 +11,7 @@ const signRefresh = (payload) =>
 const verifyAccess = (token) => jwt.verify(token, env.JWT_SECRET);
 const verifyRefresh = (token) => jwt.verify(token, env.JWT_REFRESH_SECRET);
 
-module.exports = { signAccess, signRefresh, verifyAccess, verifyRefresh };
+const hashRefreshToken = (token) =>
+  crypto.createHmac('sha256', env.REFRESH_TOKEN_HASH_KEY).update(token).digest('hex');
+
+module.exports = { signAccess, signRefresh, verifyAccess, verifyRefresh, hashRefreshToken };

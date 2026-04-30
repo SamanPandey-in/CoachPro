@@ -150,6 +150,20 @@ npm run dev  # Starts on http://localhost:5173
 3. Should redirect to /admin dashboard
 4. Sidebar navigation shows all modules
 
+### Seed Test Accounts
+
+The demo users below are created by [Backend/src/shared/db/migrations/006_seed_test_users.sql](Backend/src/shared/db/migrations/006_seed_test_users.sql). The migration is idempotent, so you can rerun migrations whenever you want to restore the seed accounts.
+
+All accounts use the same quick-login password:
+
+- `admin@coachpro.local` - `Coach@1234` - `super_admin`
+- `owner@coachpro.local` - `Coach@1234` - `owner`
+- `teacher@coachpro.local` - `Coach@1234` - `teacher`
+- `parent@coachpro.local` - `Coach@1234` - `parent`
+- `student@coachpro.local` - `Coach@1234` - `student`
+
+Refresh tokens are now stored as hashes in the database and keyed with `REFRESH_TOKEN_HASH_KEY` from [Backend/.env](Backend/.env).
+
 ## File Structure
 
 ```

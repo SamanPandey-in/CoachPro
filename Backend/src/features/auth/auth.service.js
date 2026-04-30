@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../../shared/db/pool');
-const { signAccess, signRefresh, verifyRefresh } = require('../../shared/utils/jwt');
+const { signAccess, signRefresh, verifyRefresh, hashRefreshToken } = require('../../shared/utils/jwt');
 
 exports.register = async ({ name, email, password, institute_name }) => {
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -44,11 +44,15 @@ exports.login = async ({ email, password }) => {
   const payload = { id: user.id, institute_id: user.institute_id, role: user.role };
   const accessToken = signAccess(payload);
   const refreshToken = signRefresh(payload);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  await pool.query('INSERT INTO refresh_tokens(user_id, token, expires_at) VALUES($1,$2,$3)', [user.id, refreshToken, expiresAt]);
+  await pool.query(
+    'INSERT INTO refresh_tokens(user_id, token, token_hash, expires_at) VALUES($1,$2,$3,$4)',
+    [user.id, null, refreshTokenHash, expiresAt]
+  );
   await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   return {
@@ -62,7 +66,11 @@ exports.refresh = async ({ refresh_token }) => {
   let payload;
   try { payload = verifyRefresh(refresh_token); } catch { throw { status: 401, message: 'Invalid refresh token', code: 'UNAUTHORIZED' }; }
 
-  const result = await pool.query('SELECT * FROM refresh_tokens WHERE token = $1 AND expires_at > NOW()', [refresh_token]);
+  const refreshTokenHash = hashRefreshToken(refresh_token);
+  const result = await pool.query(
+    'SELECT * FROM refresh_tokens WHERE (token_hash = $1 OR token = $2) AND expires_at > NOW()',
+    [refreshTokenHash, refresh_token]
+  );
   if (!result.rows.length) throw { status: 401, message: 'Refresh token expired', code: 'UNAUTHORIZED' };
 
   const accessToken = signAccess({ id: payload.id, institute_id: payload.institute_id, role: payload.role });
@@ -70,5 +78,6 @@ exports.refresh = async ({ refresh_token }) => {
 };
 
 exports.logout = async ({ refresh_token }) => {
-  await pool.query('DELETE FROM refresh_tokens WHERE token = $1', [refresh_token]);
+  const refreshTokenHash = hashRefreshToken(refresh_token);
+  await pool.query('DELETE FROM refresh_tokens WHERE token_hash = $1 OR token = $2', [refreshTokenHash, refresh_token]);
 };

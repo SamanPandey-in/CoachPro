@@ -6,6 +6,7 @@ const env = {
   DATABASE_URL: process.env.DATABASE_URL || null,
   JWT_SECRET: process.env.JWT_SECRET || null,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || null,
+  REFRESH_TOKEN_HASH_KEY: process.env.REFRESH_TOKEN_HASH_KEY || null,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -16,5 +17,9 @@ const env = {
   SMTP_FROM: process.env.SMTP_FROM,
   BIOMETRIC_SYNC_SECRET: process.env.BIOMETRIC_SYNC_SECRET,
 };
+
+['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'REFRESH_TOKEN_HASH_KEY'].forEach((key) => {
+  if (!env[key]) throw new Error(`Missing required env: ${key}`);
+});
 
 module.exports = env;
