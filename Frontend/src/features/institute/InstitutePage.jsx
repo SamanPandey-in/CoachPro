@@ -37,6 +37,7 @@ const EMPTY_USER_FORM = {
 
 const EMPTY_IMPORT_FORM = {
   role: 'teacher',
+  sourceUrl: '',
   text: '',
 };
 
@@ -54,6 +55,16 @@ const downloadBlob = (blob, filename) => {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+};
+
+const TEMPLATE_CSV = [
+  'name,email,role,phone',
+  'Ayesha Khan,ayesha@school.com,teacher,',
+  'Rohan Mehta,rohan@school.com,student,',
+].join('\n');
+
+const downloadText = (text, filename, contentType = 'text/csv;charset=utf-8') => {
+  downloadBlob(new Blob([text], { type: contentType }), filename);
 };
 
 const roleLabel = (role) => {
@@ -117,6 +128,9 @@ export default function InstitutePage() {
 
     const formData = new FormData();
     formData.append('role', importForm.role);
+    if (importForm.sourceUrl.trim()) {
+      formData.append('sourceUrl', importForm.sourceUrl.trim());
+    }
     if (importForm.text.trim()) {
       formData.append('text', importForm.text);
     }
@@ -136,7 +150,7 @@ export default function InstitutePage() {
 
       setImportResult(response?.data || null);
       setSelectedFile(null);
-      setImportForm((current) => ({ ...current, text: '' }));
+      setImportForm((current) => ({ ...current, sourceUrl: '', text: '' }));
     } catch {
       // toast already shown
     }
@@ -218,6 +232,9 @@ export default function InstitutePage() {
               <FileSpreadsheet className="w-4 h-4" /> Export XLSX
             </button>
           </div>
+          <button className="btn-ghost justify-center w-full" type="button" onClick={() => downloadText(TEMPLATE_CSV, 'coachops-user-import-template.csv', DOWNLOAD_CONTENT_TYPES.csv)}>
+            <FileText className="w-4 h-4" /> Download CSV template
+          </button>
           <div className="rounded-2xl border border-brand-200 bg-brand-50/70 p-4 text-sm text-brand-900">
             <p className="font-semibold flex items-center gap-2">
               <KeyRound className="w-4 h-4" /> Password pattern
@@ -349,21 +366,36 @@ export default function InstitutePage() {
             </div>
 
             <div>
+              <label className="mb-2 block text-sm font-medium text-surface-700">Google Sheets URL</label>
+              <input
+                className="input-field"
+                value={importForm.sourceUrl}
+                onChange={(event) => setImportForm((current) => ({ ...current, sourceUrl: event.target.value }))}
+                placeholder="Paste a public Google Sheets link"
+              />
+            </div>
+
+            <div>
               <label className="mb-2 block text-sm font-medium text-surface-700">Paste copied cells, sheet text, or WhatsApp OCR text</label>
               <textarea
                 className="input-field min-h-40"
                 value={importForm.text}
                 onChange={(event) => setImportForm((current) => ({ ...current, text: event.target.value }))}
                 placeholder={
-                  'name,email,role\nJohn Doe,john@school.com,teacher\nJane Smith,jane@school.com,student\n\nOr paste text copied from Google Sheets or a WhatsApp screenshot OCR.'
+                  'name,email,role\nJohn Doe,john@school.com,teacher\nJane Smith,jane@school.com,student\n\nOr paste copied Google Sheets cells or WhatsApp OCR text.'
                 }
               />
             </div>
 
-            <div className="flex flex-wrap gap-2 text-xs text-surface-500">
-              <span className="badge"><FileText className="w-3.5 h-3.5" /> CSV/Excel</span>
-              <span className="badge"><ImageIcon className="w-3.5 h-3.5" /> Screenshot OCR</span>
-              <span className="badge"><MessageSquare className="w-3.5 h-3.5" /> WhatsApp text</span>
+            <div className="grid gap-3 sm:grid-cols-3 text-xs text-surface-500">
+              <div className="badge justify-center py-2"><FileText className="w-3.5 h-3.5" /> CSV / Excel</div>
+              <div className="badge justify-center py-2"><ImageIcon className="w-3.5 h-3.5" /> Screenshot OCR</div>
+              <div className="badge justify-center py-2"><MessageSquare className="w-3.5 h-3.5" /> WhatsApp / Sheets text</div>
+            </div>
+
+            <div className="rounded-2xl border border-surface-200 bg-surface-50/70 p-4 text-sm text-surface-600">
+              <p className="font-semibold text-surface-900">How it fits the flow</p>
+              <p className="mt-1">Use the template for clean imports, paste copied Google Sheets cells for quick onboarding, or upload a screenshot when the sheet is coming from WhatsApp.</p>
             </div>
 
             <button className="btn-primary" type="submit" disabled={importingUsers}>

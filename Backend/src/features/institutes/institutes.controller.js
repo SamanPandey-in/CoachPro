@@ -1,4 +1,5 @@
 const path = require('path');
+const axios = require('axios');
 const Tesseract = require('tesseract.js');
 const XLSX = require('xlsx');
 const service = require('./institutes.service');
@@ -132,6 +133,35 @@ const parseImageRows = async (file, defaultRole) => {
   return parseTextRows(data.text, defaultRole);
 };
 
+const resolveGoogleSheetsUrl = (inputUrl) => {
+  const url = new URL(inputUrl);
+  if (!/docs\.google\.com$/i.test(url.hostname)) {
+    return url.toString();
+  }
+
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const spreadsheetIndex = pathParts.indexOf('d');
+  const sheetId = spreadsheetIndex >= 0 ? pathParts[spreadsheetIndex + 1] : null;
+  const gid = url.searchParams.get('gid') || '0';
+
+  if (!sheetId) {
+    return url.toString();
+  }
+
+  if (sheetId === 'e' && pathParts[spreadsheetIndex + 2]) {
+    const publishedId = pathParts[spreadsheetIndex + 2];
+    return `https://docs.google.com/spreadsheets/d/e/${publishedId}/pub?output=csv`;
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+};
+
+const parseUrlRows = async (sourceUrl, defaultRole) => {
+  const resolvedUrl = resolveGoogleSheetsUrl(sourceUrl);
+  const response = await axios.get(resolvedUrl, { responseType: 'text' });
+  return parseTextRows(response.data, defaultRole);
+};
+
 const parseSpreadsheetRows = (file) => {
   const extension = path.extname(file.originalname || '').toLowerCase();
   const workbook = extension === '.csv'
@@ -229,10 +259,12 @@ exports.importUsers = async (req, res, next) => {
       } else {
         rows = parseSpreadsheetRows(req.file);
       }
+    } else if (req.body.sourceUrl) {
+      rows = await parseUrlRows(req.body.sourceUrl, req.body.role);
     } else if (req.body.text) {
       rows = parseTextRows(req.body.text, req.body.role);
     } else {
-      return error(res, 'Upload a spreadsheet, image, or paste text to import users', 400, 'FILE_REQUIRED');
+      return error(res, 'Upload a spreadsheet, image, paste text, or provide a Google Sheets URL', 400, 'FILE_REQUIRED');
     }
 
     const result = await service.importUsers(req.params.id, rows, req.body.role);
